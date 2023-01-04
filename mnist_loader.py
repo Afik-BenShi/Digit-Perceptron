@@ -106,23 +106,21 @@ def load_train_data(
 
     # create dictionary of image : label
     
-    labeled_imgs = order_in_array(train_img_ds, 784, 60000)
+    labeled_imgs = order_in_array(train_img_ds, 784, train_lbl_ds, 8, 60000)
     return labeled_imgs
 
 def order_in_array(img_ds, img_len, lbl_ds, lbl_len, arrays_len):
     labeled_imgs = [None for i in range(arrays_len)]
     start_img = 0
     end_img = start_img + img_len
-    start_lbl = 0
-    end_lbl = start_lbl + lbl_len
+
     for i in range(arrays_len): 
-        img = LabeledImage(img_ds[start_img:end_img], lbl_ds[start_lbl:end_lbl])
+        img = LabeledImage(img_ds[start_img:end_img], lbl_ds[i])
         labeled_imgs[i] = img
         
         start_img += img_len
         end_img = start_img + img_len
-        start_lbl += lbl_len
-        end_lbl = start_lbl + lbl_len
+        
     
     return labeled_imgs
 
@@ -150,6 +148,6 @@ def load_test_data(
         lbl_ds = list(gz_file.read())[8:] # first 8 bits arn't labels
 
     # create dictionary of image : label
-    labeled_imgs = order_in_array(img_ds, 784, 10000)  
+    labeled_imgs = order_in_array(img_ds, 784, lbl_ds, 8, 10000)
     return labeled_imgs
 # %%
