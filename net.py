@@ -9,7 +9,7 @@ import mnist_loader as mnl
 import json
 # from scipy.special import expit as sigmoid
 from glob import glob
-from typing import List, Tuple
+from typing import Any
 
 
 def sigmoid(x):
@@ -27,9 +27,6 @@ class Network:
 
         Includes all layers and functions for the network to work properly
 
-        Attributes
-        ----------
-            TODO update
 
         Funtions
         --------
@@ -37,13 +34,16 @@ class Network:
                 evaluates the network with the input image
     '''
 
-    def __init__(self, sizes: 'np.ndarray[int]', output_lbls: 'np.ndarray[int]'):
+    def __init__(self,
+                sizes: 'list[int]', 
+                output_lbls: 'list[Any]' =  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+                ):
         '''
 
         Parameters
         ----------
-            output_lbls : array like - labels of the output in order
             layer_sizes : array like - size of each layer in the network 
+            output_lbls : array like - labels of the output in order
         '''
         self.__output_lbls = list(output_lbls)
 
@@ -72,14 +72,19 @@ class Network:
     # </Overriden functions>
 
     # <Forward and backward ealuations>
-    def evaluate(self, input_image: 'mnl.LabeledImage') -> Tuple[str, 'np.ndarray[int]']:
-        ''' evaluates the network with the input image '''
+    def evaluate(self, input_image: 'mnl.LabeledImage') -> 'np.ndarray[int]':
+        ''' Evaluates the network with the input image 
+
+            Returns
+            -------
+            output activation layer
+        '''
         prev_layer = input_image.image_1D  # assign input to last layer
         for b, w in zip(self.__biases, self.__weights):
             prev_layer = sigmoid(np.dot(w, prev_layer)+b)
         return prev_layer
 
-    def backprop(self, input_image: 'mnl.LabeledImage'):
+    def backprop(self, input_image: 'mnl.LabeledImage') -> 'tuple[list[float]]':
         ''' Evaluates input image and compares output to answer.
             propegates the error and calculates gradiants to be used in GD algoritm
 
@@ -143,25 +148,29 @@ class Network:
 
         return (nabla_w, nabla_b)
 
-    def batch_evaluate(self, test_data):
-        """ Run the neural network over the whole test data and count how many guesses were successful """
+    def batch_evaluate(self, test_data: 'list[mnl.LabeledImage]') -> int:
+        """ Run the neural network over a labled test data and return how many guesses were successful """
         lbls = self.__output_lbls
         test_res = [(lbls[np.argmax(self.evaluate(img).flatten())], img)
                     for img in test_data]
         return sum(int(guess == img) for (guess, img) in test_res)
 
-    def detect(self, input_image, detailed=False):
-        """try to guess what image is inputed"""
+    def detect(self, input_image: 'mnl.LabeledImage', detailed: bool=False) -> 'Any':
+        """try to guess what number is written in the input image"""
         activ = self.evaluate(input_image)
         lbls = self.__output_lbls
         detection = lbls[np.argmax(activ)]
         if detailed:
             input_image.show()
-            print(f'Network guessed {detection} with {np.max(activ)*100:.1f}% confidance')
+            confidance = np.max(activ)*100
+            print(f'Network guessed {detection} with {confidance:.1f}% confidance')
+            if confidance < 50:
+                next_best = np.argmax(activ[activ != max(activ)])
+                print(f'next best guess is {lbls[next_best]} with {activ[next_best]*100:.1f}% confidance')
             return
         return detection
 
-    def cost_deriv(self, net_res: 'np.ndarray[float]', answer: int) -> 'np.ndarray[float]':
+    def cost_deriv(self, net_res: 'np.ndarray[float]', answer:'Any') -> 'np.ndarray[float]':
         '''
             Calculates the derivative of a quadratic cost function. 
 
@@ -180,7 +189,14 @@ class Network:
     # </Forward and backward ealuations>
 
     # <Stochastic gradient descent>
-    def SGD(self, training_data, epochs, batch_size, learning_rate, test_data=None, progress='all'):
+    def SGD(self, 
+            training_data: 'list[mnl.LabeledImage]', 
+            epochs: int, 
+            batch_size: int, 
+            learning_rate: float, 
+            test_data: 'list[mnl.LabeledImage]'=None, 
+            progress: str='all'
+            ):
         '''
             Train the network using the training data. 
             Data is divided into small batches,
@@ -268,7 +284,9 @@ class Network:
 
     # <json stuff>
     def save_to_json(self):
-        ''' turns the data to json format and saves it '''
+        ''' turns the data to json format and saves it.
+        Returns the file name of the saved network.
+        '''
 
         json_dict = {f'layer{i}': {  # number layers in json file
             'weights': list(self.__weights[i].flatten()),
@@ -282,23 +300,29 @@ class Network:
         json_str = json.dumps(json_dict, indent=4)  # turn into json format
 
         try:
-            name = max(glob('saves\\*.json'))
-            id = int(''.join(i for i in name if i.isdigit()))
+            names = glob('saves\\*.json')
+            id = max([int(''.join(i for i in name if i.isdigit())) for name in names])
             name = f'saves\\save_{id+1}.json'
         except:
             name = 'saves\\save_0.json'
         finally:
             with open(name, 'w') as f:
                 f.write(json_str)
+            return name
 
-    def load_from_json(path=None):
+    @staticmethod
+    def load_from_json(path:str=None) -> 'Network':
         ''' creates a layer according to saved json file
             if path is None, takes the last one'''
 
         saves = glob('saves\\*.json')
         if path == None:
-            path = max(saves)  # choose most recent save
-        assert path in saves  # assert savefile exists
+            # choose most recent save
+            id = max([int(''.join(i for i in save if i.isdigit())) for save in saves])
+            path = f'saves\\save_{id}.json'
+        if path not in saves:
+            # assert savefile exists
+            return None
 
         with open(path) as f:
             data = json.load(f)
@@ -320,10 +344,18 @@ class Network:
         return Network.__from_data(weights, biases, data['labels'])
     # </json stuff>
 
-    def __from_data(weights, biases, labels):
-        N = Network([1], labels)
-        N.__weights = weights  # not very elegant but quick
-        N.__biases = biases
+    @staticmethod
+    def __from_data(weights: 'np.ndarray[float]', biases: 'np.ndarray[float]', labels: 'list[Any]') -> 'Network':
+        '''Creates a network from the given parameters.
+        Parameters
+        ----------
+            weights : array like - the weights for each of the connections between neurons
+            biases  : array like - the biases for each of the neurons in the network
+            labels  : iterable - the labels of the output layer
+        '''
+        N = Network([1], list(labels).copy())
+        N.__weights = np.array(weights).copy()
+        N.__biases = np.array(biases).copy()
         return N
 
 

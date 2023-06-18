@@ -2,7 +2,6 @@
 import gzip
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import List
 
 class LabeledImage:
     '''
@@ -85,7 +84,7 @@ class LabeledImage:
 def load_train_data(
     imgs_path:str='mnist_data\\train-images-idx3-ubyte.gz',
     lbl_path:str='mnist_data\\train-labels-idx1-ubyte.gz'
-    ) -> List[LabeledImage]:
+    ) -> 'list[LabeledImage]':
     '''
         Loads MNIST train dataset of 60,000 handwritten numbers.
         Parameters
@@ -128,7 +127,7 @@ def order_in_array(img_ds, img_len, lbl_ds, lbl_len, arrays_len):
 def load_test_data(
     imgs_path:str='mnist_data\\t10k-images-idx3-ubyte.gz',
     lbl_path:str='mnist_data\\t10k-labels-idx1-ubyte.gz'
-    ) -> List[LabeledImage]:
+    ) -> 'list[LabeledImage]':
     '''
         Loads MNIST test dataset of 10,000 handwritten numbers.
         Parameters
