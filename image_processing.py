@@ -106,7 +106,3 @@ def load_image():
         return img
     else:
         return load_image()
-
-if __name__ == '__main__':
-    i = process(r'pictures\crop test.jpeg')
-# %%

@@ -115,39 +115,6 @@ class Network:
             nabla_w[-i] = np.dot(delta, activations[-i-1].transpose())
         return (nabla_b, nabla_w)
 
-    def back_prop(self, input_image: 'mnl.LabeledImage'):
-        ''' Evaluates input image and compares output to answer.
-            propegates the error and calculates gradiants to be used in GD algoritm
-
-            Returns
-            --------
-            (grad_weights, grad_biases)'''
-        nabla_b = [np.zeros(b.shape) for b in self.__biases]
-        nabla_w = [np.zeros(w.shape) for w in self.__weights]
-        # feed forward
-        a = input_image.image_1D
-        activations = [a.copy()]
-        raw_activs = []
-        for w, b in zip(self.__weights, self.__biases):
-            r = np.dot(w, a) + b
-            raw_activs.append(r)
-            a = sigmoid(r)
-            activations.append(a)
-
-        # gradient calculations
-        delta = self.cost_deriv(
-            activations[-1], input_image.label) * sigmoid_deriv(raw_activs[-1])  # delta last layer
-        nabla_b[-1] = delta
-        nabla_w[-1] = np.dot(delta, activations[-2].transpose())
-        for i in range(2, self.__layer_num):        # back propegate the error
-            r = raw_activs[-i]
-            w = self.__weights[-i+1]
-            delta = np.dot(w.transpose(), delta) * sigmoid_deriv(r)
-            nabla_b[-i] = delta                      # gradient calculations
-            nabla_w[-i] = np.dot(delta, activations[-i-1].transpose())
-
-        return (nabla_w, nabla_b)
-
     def batch_evaluate(self, test_data: 'list[mnl.LabeledImage]') -> int:
         """ Run the neural network over a labled test data and return how many guesses were successful """
         lbls = self.__output_lbls
@@ -164,9 +131,6 @@ class Network:
             input_image.show()
             confidance = np.max(activ)*100
             print(f'Network guessed {detection} with {confidance:.1f}% confidance')
-            if confidance < 50:
-                next_best = np.argmax(activ[activ != max(activ)])
-                print(f'next best guess is {lbls[next_best]} with {activ[next_best]*100:.1f}% confidance')
             return
         return detection
 
@@ -357,14 +321,5 @@ class Network:
         N.__weights = np.array(weights).copy()
         N.__biases = np.array(biases).copy()
         return N
-
-
-#%%
-if __name__ == '__main__':
-    N = Network([30], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    train_d = mnl.load_train_data()
-    test_d = mnl.load_test_data()
-    N.SGD(train_d, 30, 10, 3.0, test_d,'epochs')
-
 
 # %%
