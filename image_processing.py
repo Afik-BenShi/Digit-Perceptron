@@ -1,44 +1,48 @@
+'''image processing to make it conform to mnist format'''
 #%%
-from PIL import Image
-import numpy as np
-from mnist_loader import LabeledImage
 import tkinter as tk
 from tkinter import filedialog
+import numpy as np
+from PIL import Image
+from mnist_loader import LabeledImage
 
 YES = {'Y','y','YES','yes','Yes'}
 NO = {'N','n','NO','no','No'}
 
 def process(filename, label=None):
-    # open image 
+    '''Image processing procedure'''
+    # open image
     img = Image.open(filename)
     img = img.convert('L')
-    w, h = img.size
+    width, height = img.size
 
 
     while True:             # rotate
         new_img = img.copy()
         new_mat = new_img.load()
-        
+
         new_img.show()
         if input('rotate? (y/n) ') in YES:
             deg = _int_input('how many turns? (clockwise) ')
             new_img = img.rotate(-deg*90)
-            if _is_fine(new_img): break
+            if _is_fine(new_img):
+                break
         else:
             break
-    
+
     img = new_img
     while True:             # to BW
         new_img = img.copy()
         new_mat = new_img.load()
-    
+
         thresh = _int_input('Choose BW sensitivity (0-100): ')
         thresh = thresh/100 * 255
-        for y in range(h):
-            for x in range(w):
-                new_mat[x,y] = 0 if new_mat[x,y] > thresh else 255
-        
-        if _is_fine(new_img): break
+        for _y in range(height):
+            for _x in range(width):
+                new_mat[_x,_y] = 0 if new_mat[_x,_y] > thresh else 255
+
+        if _is_fine(new_img):
+            break
 
     new_img = crop(new_img)
 
@@ -55,24 +59,24 @@ def process(filename, label=None):
 def crop(img, pad = 0.2):
     ''' Takes a BW image of a digit on a white background and crops it to a square '''
     mat = img.load()
-    w,h = img.size
+    _w,_h = img.size
     top = left = np.inf
     bot = right = 0
-    
+
     # find digit bounds
-    for x in range(w):
-        for y in range (h):
-            if mat[x,y] == 255:
-                left = min(x,left)
-                right = max(x,right)
-                top = min(y,top)
-                bot = max(y,bot)
+    for _x in range(_w):
+        for _y in range (_h):
+            if mat[_x,_y] == 255:
+                left = min(_x,left)
+                right = max(_x,right)
+                top = min(_y,top)
+                bot = max(_y,bot)
 
     length = max(right - left, bot - top) # square crop length
     pad = pad * length
     cropped = img.crop((
                 left - pad,
-                top - pad, 
+                top - pad,
                 left + length + pad,
                 top + length + pad))
     return cropped
@@ -96,6 +100,7 @@ def _is_fine(img):
     return check in YES
 
 def load_image():
+    '''load image using a dialogue box'''
 
     root = tk.Tk()
     root.withdraw()
@@ -104,5 +109,5 @@ def load_image():
     img = process(file_path)
     if img:
         return img
-    else:
-        return load_image()
+
+    return load_image()
