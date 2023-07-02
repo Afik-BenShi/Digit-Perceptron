@@ -10,10 +10,10 @@ Was also inspired by the 3Blue1Brown video series [Neural Networks](https://www.
 - Load MNIST images and labels
 - Create a neural network and train it no MNIST data (or other data)
 - Save and load networks to json file
+- Create and train a new network from console UI
 - Load and prepare an image to be detected by the network (in progress)
 - Simple console UI (in progress)
 
 ## What I Want To Do Next
 - Improve the network's training based on the next chapters in the book
 - Auto-crop loaded images to match MNIST format
-- Create and train a new network from console UI
